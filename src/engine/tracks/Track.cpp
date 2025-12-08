@@ -10,7 +10,7 @@
 #include "port/resource/type/TrackPathPointData.h"
 #include "engine/editor/SceneManager.h"
 #include "Registry.h"
-#include "resourcebridge.h"
+#include "libultraship/bridge/resourcebridge.h"
 #include "align_asset_macro.h"
 
 extern "C" {

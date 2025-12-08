@@ -3,7 +3,7 @@
 #include "Game.h"
 #include "port/Engine.h"
 
-#include <graphic/Fast3D/Fast3dWindow.h>
+#include <fast/Fast3dWindow.h>
 #include "engine/World.h"
 #include "engine/tracks/Track.h"
 #include "engine/tracks/MarioRaceway.h"
