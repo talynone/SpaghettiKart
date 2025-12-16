@@ -59,7 +59,7 @@ void update_actor_green_shell(struct ShellActor* shell) {
                 controller = &gControllers[shell->playerId];
                 if ((controller->buttonDepressed & Z_TRIG) != 0) {
                     controller->buttonDepressed &= ~Z_TRIG;
-                    if (controller->rawStickY < -0x2D) {
+                    if (controller->rawStickY < THROW_SHELL_BACKWARDS) {
                         var_f2 = 8.0f;
                         if (player->speed > 8.0f) {
                             var_f2 = player->speed * 1.2f;
@@ -71,14 +71,14 @@ void update_actor_green_shell(struct ShellActor* shell) {
                         shell->velocity[0] = somePosVel[0];
                         shell->velocity[1] = somePosVel[1];
                         shell->velocity[2] = somePosVel[2];
-                        shell->state = 2;
+                        shell->state = MOVING_SHELL;
                         func_800C9060(shell->playerId, SOUND_ARG_LOAD(0x19, 0x00, 0x80, 0x04));
                         func_800C90F4(shell->playerId,
                                       (player->characterId * 0x10) + SOUND_ARG_LOAD(0x29, 0x00, 0x80, 0x00));
                         add_green_shell_in_unexpired_actor_list(CM_FindActorIndex(shell));
                         return;
                     } else {
-                        shell->state = 1;
+                        shell->state = RELEASED_SHELL;
                         if (player->unk_0C0 > 0) {
                             shell->rotAngle = 0x78E3;
                         } else {

@@ -512,6 +512,8 @@ player spins. Something  with avoding rollover of aniamation frame data? */
 #define SPAWN_FIRST_SHELL 0
 #define SPAWN_SECOND_SHELL 1
 #define SPAWN_THIRD_SHELL 2
+#define SHELL_COLLISION 3 // Activated when triple shells have spawned
+#define ORBIT_PLAYER 4
 
 #define GPACK_RGB888(r, g, b) (((r) << 16) | ((g) << 8) | (b))
 #define COLOR_LIGHT GPACK_RGB888(0x1C, 0x00, 0x00)

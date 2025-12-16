@@ -34,7 +34,7 @@ typedef struct {
     /* 0x08 */ s16 numDroppedBananaBunch;
     /* 0x0A */ s16 unk_0A;
     /* 0x0C */ s16 unk_0C;
-    /* 0x0E */ s16 timeBeforeThrow;
+    /* 0x0E */ s16 timeBeforeThrow; // Allows time for spawning the shells before they can be spawned
 } CpuItemStrategyData; // size = 0x10
 
 typedef struct {
@@ -89,6 +89,14 @@ enum CpuItemStrategyEnum {
     CPU_STRATEGY_ITEM_BLUE_SPINY_SHELL,
     CPU_STRATEGY_THROW_BLUE_SPINY_SHELL,
     CPU_STRATEGY_HOLD_BLUE_SPINY_SHELL,
+
+    CPU_STRATEGY_ITEM_TRIPLE_GREEN_SHELL,
+    CPU_STRATEGY_ORBIT_TRIPLE_GREEN_SHELL,
+    CPU_STRATEGY_THROW_TRIPLE_GREEN_SHELL,
+
+    CPU_STRATEGY_ITEM_TRIPLE_RED_SHELL,
+    CPU_STRATEGY_ORBIT_TRIPLE_RED_SHELL,
+    CPU_STRATEGY_THROW_TRIPLE_RED_SHELL,
 };
 
 /* Function Prototypes */

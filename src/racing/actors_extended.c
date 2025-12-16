@@ -391,8 +391,8 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
                 parent->state = 3;
             }
             break;
-        case 3:
-            parent->state = 4;
+        case SHELL_COLLISION:
+            parent->state = ORBIT_PLAYER;
             shell = (struct ShellActor*) GET_ACTOR((s16) parent->shellIndices[0]);
             shell->flags |= 0x4000;
             shell = (struct ShellActor*) GET_ACTOR((s16) parent->shellIndices[1]);
@@ -400,7 +400,7 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
             shell = (struct ShellActor*) GET_ACTOR((s16) parent->shellIndices[2]);
             shell->flags |= 0x4000;
             break;
-        case 4:
+        case ORBIT_PLAYER:
             shellCount = 0;
             if (is_shell_exist(parent->shellIndices[0]) == 1) {
                 shellCount = 1;
@@ -422,10 +422,14 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
                 break;
             }
             if ((gControllers[parent->playerId].buttonPressed & Z_TRIG) != 0) {
-                parent->unk_08 += 1.0f;
+                /**
+                 * Fires shell. Uses += 1.0f because this code is ran multiple times per frame.
+                 * A bool would be turned on and off again resulting in no change
+                 */
+                parent->firePressed += 1.0f;
                 gControllers[parent->playerId].buttonPressed &= ~Z_TRIG;
             }
-            if (parent->unk_08 > 0.0f) {
+            if (parent->firePressed > 0.0f) { // Fires a shell and resets firePressed to zero
                 if (parent->shellIndices[0] > 0.0f) {
                     shell = (struct ShellActor*) GET_ACTOR((s16) parent->shellIndices[0]);
                     if ((shell->rotAngle < 0x38E) || (shell->rotAngle >= -0x38D)) {
@@ -448,7 +452,7 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
                         }
                         parent->shellIndices[0] = -1.0f;
                         parent->shellsAvailable -= 1;
-                        parent->unk_08 -= 1.0f;
+                        parent->firePressed -= 1.0f;
                         break;
                     }
                 }
@@ -474,7 +478,7 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
                         }
                         parent->shellIndices[1] = -1.0f;
                         parent->shellsAvailable -= 1;
-                        parent->unk_08 -= 1.0f;
+                        parent->firePressed -= 1.0f;
                         break;
                     }
                 }
@@ -500,7 +504,7 @@ void update_actor_triple_shell(TripleShellParent* parent, s16 shellType) {
                         }
                         parent->shellIndices[2] = -1.0f;
                         parent->shellsAvailable -= 1;
-                        parent->unk_08 -= 1.0f;
+                        parent->firePressed -= 1.0f;
                         break;
                     }
                 }
@@ -548,7 +552,7 @@ s32 use_triple_shell_item(Player* player, s16 tripleShellType) {
     parent->rotAngle = -0x8000;
     parent->playerId = player - gPlayerOne;
     parent->shellsAvailable = 0;
-    parent->unk_08 = 0.0f;
+    parent->firePressed = 0.0f;
     return actorIndex;
 }
 
@@ -681,7 +685,14 @@ s32 use_red_shell_item(Player* player) {
 // Interestingly blue shells start their life as a red shell,
 // and then just change the type from red to blue shell
 s32 use_blue_shell_item(Player* player) {
-    GET_ACTOR(use_red_shell_item(player))->type = ACTOR_BLUE_SPINY_SHELL;
+    // GET_ACTOR(use_red_shell_item(player))->type = ACTOR_BLUE_SPINY_SHELL;    // Original code was just this line, without return statement! So I commented out.
+
+    // Fix the CPU strategy not properly releasing the blue shell. This function originally doesnt have a return value, so it returns UB.
+    // The actor index range check on the cpu strategy fails because the actual actor index of blue shell was never returned by this function!
+    s16 actorIndex = use_red_shell_item(player);
+    GET_ACTOR(actorIndex)->type = ACTOR_BLUE_SPINY_SHELL;
+
+    return actorIndex;
 }
 
 #include "actors/banana/update.inc.c"

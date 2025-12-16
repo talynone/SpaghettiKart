@@ -106,6 +106,8 @@ enum ShellState {
     BLUE_SHELL_TARGET_ELIMINATED // Mission completed, well done boss.
 };
 
+#define THROW_SHELL_BACKWARDS -45 // Analogue stick Y value
+
 // Actor banana->state
 enum BananaState {
     HELD_BANANA,               // Single banana that has not been dropped.
@@ -305,7 +307,7 @@ typedef struct {
     /* 0x02 */ s16 flags;
     /* 0x04 */ s16 shellsAvailable;
     /* 0x06 */ s16 state;
-    /* 0x08 */ f32 unk_08;
+    /* 0x08 */ f32 firePressed; // Set to 1.0 when Z is pressed. Triggers if value higher than 0.0, acts like a boolean
     /* 0x0C */ f32 unk_0C;
     /* 0x10 */ s16 rotVelocity;
     /* 0x12 */ s16 rotAngle;
