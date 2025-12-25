@@ -10,19 +10,30 @@ jobs:
     strategy:
       matrix:
         config: [Release, Debug]
+        arch: [x64, arm64]
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
           submodules: recursive
-      - name: Build
+
+      - name: Configure & Build (${{ matrix.arch }})
         run: |
-          cmake -S . -B "build/x64" -G "Visual Studio 17 2022" -T v143 -A x64 -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-          cmake --build ./build/x64 --config ${{ matrix.config }} --parallel 10
-      - name: Upload build
+          cmake -S . -B "build/${{ matrix.arch }}" `
+            -G "Visual Studio 17 2022" `
+            -T v143 `
+            -A ${{ matrix.arch }} `
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+          cmake --build "build/${{ matrix.arch }}" `
+            --config ${{ matrix.config }} `
+            --parallel 10
+
+      - name: Upload build (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         with:
-          name: spaghetti-windows-${{ matrix.config }}
-          path: ./build/x64/${{ matrix.config }}
+          name: spaghetti-windows-${{ matrix.arch }}-${{ matrix.config }}
+          path: build/${{ matrix.arch }}/${{ matrix.config }}
           retention-days: 1
