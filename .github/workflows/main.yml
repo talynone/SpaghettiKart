@@ -80,6 +80,47 @@ jobs:
         with:
           name: spaghetti-windows
           path: spaghetti-${{ matrix.config }}
+    
+    build-windows-arm64:
+    needs: generate-port-o2r
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        config: [Release, Debug]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: recursive
+
+      - name: Build (ARM64)
+        run: |
+          cmake -S . -B "build/arm64" -G "Visual Studio 17 2022" -T v143 -A ARM64 -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+          cmake --build ./build/arm64 --config ${{ matrix.config }} --parallel 10
+
+      - name: Download spaghetti.o2r
+        uses: actions/download-artifact@v4
+        with:
+          name: spaghetti.o2r
+          path: ./build/arm64/${{ matrix.config }}
+
+      - name: Create Package
+        run: |
+          mkdir spaghetti-arm64-${{ matrix.config }}
+          mv build/arm64/${{ matrix.config }}/Spaghettify.exe spaghetti-arm64-${{ matrix.config }}/
+          mv build/arm64/${{ matrix.config }}/spaghetti.o2r spaghetti-arm64-${{ matrix.config }}/
+          mv config.yml spaghetti-arm64-${{ matrix.config }}/
+          mv yamls spaghetti-arm64-${{ matrix.config }}/
+          mv meta spaghetti-arm64-${{ matrix.config }}/
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mdqinc/SDL_GameControllerDB/master/gamecontrollerdb.txt" -OutFile "spaghetti-arm64-${{ matrix.config }}/gamecontrollerdb.txt"
+
+      - name: Upload build
+        if: matrix.config == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spaghetti-windows-arm64
+          path: spaghetti-arm64-${{ matrix.config }}
 
   build-macos-arm64:
     needs: generate-port-o2r
