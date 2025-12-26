@@ -63,21 +63,38 @@ else()
     set(VCPKG_FALLBACK_ROOT ${CMAKE_CURRENT_BINARY_DIR}/.vcpkg CACHE STRING  "vcpkg configuration directory to use if vcpkg was not installed on the system before")
 endif()
 
-# On Windows, Vcpkg defaults to x86, even on x64 systems. If we're 
-# doing a 64-bit build, we need to fix that.
-if (WIN32)
+# On Windows, choose a sensible default Vcpkg triplet based on the VS platform.
+# (Pointer size is not enough to distinguish x64 vs ARM64.)
+if (WIN32 AND NOT DEFINED VCPKG_TRIPLET AND NOT DEFINED VCPKG_TARGET_TRIPLET)
 
-    # Since the compiler checks haven't run yet, we need to figure
-    # out the value of CMAKE_SIZEOF_VOID_P ourselfs
+    # If we're using the VS generator, this is the authoritative platform name.
+    # Possible values: Win32, x64, ARM64, ARM
+    if(DEFINED CMAKE_VS_PLATFORM_NAME)
+        if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64")
+            set(VCPKG_TRIPLET "arm64-windows-static")
+        elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+            set(VCPKG_TRIPLET "x64-windows-static")
+        elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
+            set(VCPKG_TRIPLET "x86-windows-static")
+        else()
+            # Fallback: keep vcpkg default if an unknown platform is used
+            message(STATUS "Unknown CMAKE_VS_PLATFORM_NAME='${CMAKE_VS_PLATFORM_NAME}', leaving VCPKG_TRIPLET unset")
+        endif()
+    else()
+        # Non-VS generators: fallback to pointer-size heuristic
+        include(CheckTypeSize)
+        enable_language(C)
+        check_type_size("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
 
-    include(CheckTypeSize)
-    enable_language(C)
-    check_type_size("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
-    
-    if (SIZEOF_VOID_P EQUAL 8)
-        message(STATUS "Using Vcpkg triplet 'x64-windows'")
-        
-        set(VCPKG_TRIPLET x64-windows)
+        if (SIZEOF_VOID_P EQUAL 8)
+            set(VCPKG_TRIPLET "x64-windows-static")
+        else()
+            set(VCPKG_TRIPLET "x86-windows-static")
+        endif()
+    endif()
+
+    if (DEFINED VCPKG_TRIPLET)
+        message(STATUS "Using Vcpkg triplet '${VCPKG_TRIPLET}'")
     endif()
 endif()
 
@@ -87,6 +104,25 @@ if(NOT DEFINED VCPKG_ROOT)
     else()
         set(VCPKG_ROOT $ENV{VCPKG_ROOT})
     endif()
+endif()
+
+# ----------------------------
+# Normalize triplet variables
+# Prefer VCPKG_TARGET_TRIPLET (CMake standard) over VCPKG_TRIPLET (legacy).
+# ----------------------------
+if(DEFINED VCPKG_TARGET_TRIPLET AND NOT DEFINED VCPKG_TRIPLET)
+    set(VCPKG_TRIPLET "${VCPKG_TARGET_TRIPLET}")
+endif()
+
+if(DEFINED VCPKG_TRIPLET AND NOT DEFINED VCPKG_TARGET_TRIPLET)
+    set(VCPKG_TARGET_TRIPLET "${VCPKG_TRIPLET}")
+endif()
+
+# Status output (for logs / CI debugging)
+if(DEFINED VCPKG_TARGET_TRIPLET)
+    message(STATUS "Vcpkg target triplet: ${VCPKG_TARGET_TRIPLET}")
+elseif(DEFINED VCPKG_TRIPLET)
+    message(STATUS "Vcpkg triplet: ${VCPKG_TRIPLET}")
 endif()
 
 # Installs a new copy of Vcpkg or updates an existing one
@@ -158,9 +194,12 @@ macro(vcpkg_install_packages)
 
     message(STATUS "Installing/Updating the following vcpkg-packages: ${PACKAGES_LIST_STR}")
 
-    if (VCPKG_TRIPLET)
+    if(DEFINED VCPKG_TARGET_TRIPLET AND NOT "${VCPKG_TARGET_TRIPLET}" STREQUAL "")
+        set(ENV{VCPKG_DEFAULT_TRIPLET} "${VCPKG_TARGET_TRIPLET}")
+    elseif(DEFINED VCPKG_TRIPLET AND NOT "${VCPKG_TRIPLET}" STREQUAL "")
         set(ENV{VCPKG_DEFAULT_TRIPLET} "${VCPKG_TRIPLET}")
     endif()
+
 
     execute_process(
         COMMAND ${VCPKG_EXEC} install ${ARGN}

@@ -86,8 +86,6 @@ add_compile_definitions(YAML_CPP_STATIC_DEFINE)
 include(cmake/lus-cvars.cmake)
 
 if (WIN32)
-  include(cmake/automate-vcpkg.cmake)
-
   # Decide vcpkg triplet from VS platform (default x64)
   if(NOT CMAKE_VS_PLATFORM_NAME)
     set(CMAKE_VS_PLATFORM_NAME "x64")
@@ -101,23 +99,19 @@ if (WIN32)
     set(_VCPKG_TRIPLET "x64-windows-static")
   endif()
 
-  # Only set triplets if the user didn't already provide them (e.g. via -DVCPKG_TARGET_TRIPLET=...)
-  if(NOT DEFINED VCPKG_TARGET_TRIPLET)
-    set(VCPKG_TARGET_TRIPLET "${_VCPKG_TRIPLET}" CACHE STRING "" FORCE)
-  endif()
-  if(NOT DEFINED VCPKG_TRIPLET)
-    set(VCPKG_TRIPLET "${VCPKG_TARGET_TRIPLET}" CACHE STRING "" FORCE)
-  endif()
+  # FORCE so automate-vcpkg can't pick x64 first
+  set(VCPKG_TARGET_TRIPLET "${_VCPKG_TRIPLET}" CACHE STRING "" FORCE)
+  set(VCPKG_TRIPLET        "${_VCPKG_TRIPLET}" CACHE STRING "" FORCE)
 
-  message("Using Vcpkg triplet '${VCPKG_TARGET_TRIPLET}'")
+  message(STATUS "Using Vcpkg triplet '${VCPKG_TARGET_TRIPLET}'")
 
+  include(cmake/automate-vcpkg.cmake)
   vcpkg_bootstrap()
   vcpkg_install_packages()
 
   set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
   set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
-
 
 if (MSVC)
 set(CPP "${CMAKE_C_COMPILER}" "/EP")
