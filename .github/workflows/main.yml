@@ -81,7 +81,7 @@ jobs:
           name: spaghetti-windows
           path: spaghetti-${{ matrix.config }}
     
-    build-windows-arm64:
+  build-windows-arm64:
     needs: generate-port-o2r
     runs-on: windows-2022
     strategy:
