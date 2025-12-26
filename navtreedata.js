@@ -28,7 +28,7 @@ var NAVTREE =
     [ "Actors", "actorsmenu.html", "actorsmenu" ],
     [ "Understanding the Basics", "basics.html", "basics" ],
     [ "Building SpagettiKart", "md_docs_2BUILDING.html", [
-      [ "Windows", "md_docs_2BUILDING.html#windows-1", [
+      [ "Windows", "md_docs_2BUILDING.html#windows", [
         [ "Developing SpaghettiKart", "md_docs_2BUILDING.html#developing-spaghettikart", [
           [ "Visual Studio", "md_docs_2BUILDING.html#visual-studio", null ],
           [ "Visual Studio Code or another editor", "md_docs_2BUILDING.html#visual-studio-code-or-another-editor", null ]
@@ -38,18 +38,18 @@ var NAVTREE =
           [ "Clean", "md_docs_2BUILDING.html#clean", null ]
         ] ]
       ] ],
-      [ "Linux", "md_docs_2BUILDING.html#linux-1", [
+      [ "Linux", "md_docs_2BUILDING.html#linux", [
         [ "Clone the repo and enter the directory", "md_docs_2BUILDING.html#clone-the-repo-and-enter-the-directory", null ],
         [ "Manual", "md_docs_2BUILDING.html#manual", [
           [ "Install dependencies", "md_docs_2BUILDING.html#install-dependencies", [
             [ "Debian/Ubuntu", "md_docs_2BUILDING.html#debianubuntu", null ],
-            [ "Arch", "md_docs_2BUILDING.html#arch-1", null ],
-            [ "Fedora", "md_docs_2BUILDING.html#fedora-1", null ],
+            [ "Arch", "md_docs_2BUILDING.html#arch", null ],
+            [ "Fedora", "md_docs_2BUILDING.html#fedora", null ],
             [ "openSUSE", "md_docs_2BUILDING.html#opensuse", null ]
           ] ],
           [ "Build", "md_docs_2BUILDING.html#build", null ]
         ] ],
-        [ "Docker", "md_docs_2BUILDING.html#docker-1", [
+        [ "Docker", "md_docs_2BUILDING.html#docker", [
           [ "Create the docker container", "md_docs_2BUILDING.html#create-the-docker-container", null ],
           [ "Configure the project", "md_docs_2BUILDING.html#configure-the-project", null ],
           [ "Compile the project", "md_docs_2BUILDING.html#compile-the-project", null ]
@@ -59,7 +59,7 @@ var NAVTREE =
           [ "Clean", "md_docs_2BUILDING.html#clean-1", null ]
         ] ]
       ] ],
-      [ "macOS", "md_docs_2BUILDING.html#macos-1", [
+      [ "macOS", "md_docs_2BUILDING.html#macos", [
         [ "Generating a distributable", "md_docs_2BUILDING.html#generating-a-distributable", null ],
         [ "Additional CMake Targets", "md_docs_2BUILDING.html#additional-cmake-targets-2", [
           [ "Clean", "md_docs_2BUILDING.html#clean-2", null ]
@@ -119,7 +119,7 @@ var NAVTREE =
       [ "New Folder Structure", "md_docs_2migrations.html#new-folder-structure", null ],
       [ "Manual Migration", "md_docs_2migrations.html#manual-migration", null ],
       [ "Troubleshooting", "md_docs_2migrations.html#troubleshooting", null ],
-      [ "See Also", "md_docs_2migrations.html#see-also", null ]
+      [ "See Also", "md_docs_2migrations.html#see-also-1", null ]
     ] ],
     [ "Modding", "md_docs_2modding.html", [
       [ "General Structure", "md_docs_2modding.html#general-structure", [
@@ -144,7 +144,7 @@ var NAVTREE =
       [ "Load Order", "md_docs_2mods-toml.html#load-order", null ],
       [ "Best Practices", "md_docs_2mods-toml.html#best-practices", null ],
       [ "Migration Script Support", "md_docs_2mods-toml.html#migration-script-support", null ],
-      [ "See Also", "md_docs_2mods-toml.html#see-also-1", null ]
+      [ "See Also", "md_docs_2mods-toml.html#see-also", null ]
     ] ],
     [ "Sequence Information (Music)", "md_docs_2sequences-information.html", [
       [ "Race Tracks", "md_docs_2sequences-information.html#race-tracks", null ],
