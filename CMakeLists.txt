@@ -65,8 +65,10 @@ endif()
 # Set the minimum version of CMake and the deployment target for macOS
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version")
 
-# Set CMake to build as Universal Binary for macOS
-set(CMAKE_OSX_ARCHITECTURES=arm64;x86_64)
+# Only set macOS universal binary arch list on Apple builds
+if(APPLE)
+  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Build universal binary" FORCE)
+endif()
 
 # Set the C++ standard and enable the MSVC parallel build option
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
@@ -84,15 +86,38 @@ add_compile_definitions(YAML_CPP_STATIC_DEFINE)
 include(cmake/lus-cvars.cmake)
 
 if (WIN32)
-include(cmake/automate-vcpkg.cmake)
-set(VCPKG_TRIPLET x64-windows-static)
-set(VCPKG_TARGET_TRIPLET x64-windows-static)
-vcpkg_bootstrap()
-vcpkg_install_packages()
+  include(cmake/automate-vcpkg.cmake)
 
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # Decide vcpkg triplet from VS platform (default x64)
+  if(NOT CMAKE_VS_PLATFORM_NAME)
+    set(CMAKE_VS_PLATFORM_NAME "x64")
+  endif()
+
+  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64")
+    set(_VCPKG_TRIPLET "arm64-windows-static")
+  elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
+    set(_VCPKG_TRIPLET "x86-windows-static")
+  else()
+    set(_VCPKG_TRIPLET "x64-windows-static")
+  endif()
+
+  # Only set triplets if the user didn't already provide them (e.g. via -DVCPKG_TARGET_TRIPLET=...)
+  if(NOT DEFINED VCPKG_TARGET_TRIPLET)
+    set(VCPKG_TARGET_TRIPLET "${_VCPKG_TRIPLET}" CACHE STRING "" FORCE)
+  endif()
+  if(NOT DEFINED VCPKG_TRIPLET)
+    set(VCPKG_TRIPLET "${VCPKG_TARGET_TRIPLET}" CACHE STRING "" FORCE)
+  endif()
+
+  message("Using Vcpkg triplet '${VCPKG_TARGET_TRIPLET}'")
+
+  vcpkg_bootstrap()
+  vcpkg_install_packages()
+
+  set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+  set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
+
 
 if (MSVC)
 set(CPP "${CMAKE_C_COMPILER}" "/EP")
@@ -120,10 +145,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
 
     if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
-        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"))
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64"))
         message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
     endif()
 endif()
+
 
 ################################################################################
 # Compiler specific configuration types
@@ -320,28 +347,20 @@ endif()
 ################################################################################
 if (MSVC)
   if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	  get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-	  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-		  string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-			  $<$<CONFIG:Debug>:
-                MultiThreadedDebug
-			  >
-			  $<$<CONFIG:Release>:
-                MultiThreaded
-			  >
-			  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-		  )
-	  elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
-		  string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
-			  $<$<CONFIG:Debug>:
-				  MultiThreadedDebug
-			  >
-			  $<$<CONFIG:Release>:
-				  MultiThreaded
-			  >
-			  $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
-		  )
-	  endif()
+	  get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)	  
+      if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64" OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64")
+        string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
+            $<$<CONFIG:Debug>:MultiThreadedDebug>
+            $<$<CONFIG:Release>:MultiThreaded>
+            $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+        )
+      elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
+        string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
+            $<$<CONFIG:Debug>:MultiThreadedDebug>
+            $<$<CONFIG:Release>:MultiThreaded>
+            $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>>>:${MSVC_RUNTIME_LIBRARY_DEFAULT}>
+        )
+      endif()
 	  set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUNTIME_LIBRARY_STR})
   endif()
 endif()
@@ -537,19 +556,10 @@ endif()
 # Compile and link options
 ################################################################################
 if(MSVC)
-  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64" OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64")
       target_compile_options(${PROJECT_NAME} PRIVATE
-          $<$<CONFIG:Debug>:
-              /w;
-              /Od;
-              /MTd
-          >
-          $<$<CONFIG:Release>:
-              /Oi;
-              /Gy;
-              /W3;
-              /MT
-          >
+          $<$<CONFIG:Debug>:/w;/Od;/MTd>
+          $<$<CONFIG:Release>:/Oi;/Gy;/W3;/MT>
           /permissive-;
           /MP;
           ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
@@ -559,15 +569,8 @@ if(MSVC)
       target_compile_options(${PROJECT_NAME} PRIVATE  $<$<CONFIG:Release>:/Zi;>)
   elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
       target_compile_options(${PROJECT_NAME} PRIVATE
-          $<$<CONFIG:Debug>:
-              /MTd
-          >
-          $<$<CONFIG:Release>:
-              /O2;
-              /Oi;
-              /Gy;
-              /MT
-          >
+          $<$<CONFIG:Debug>:/MTd>
+          $<$<CONFIG:Release>:/O2;/Oi;/Gy;/MT>
           /permissive-;
           /MP;
           /w;
@@ -575,46 +578,30 @@ if(MSVC)
           ${DEFAULT_CXX_EXCEPTION_HANDLING}
       )
   endif()
-  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+
+  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64" OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64")
       target_link_options(${PROJECT_NAME} PRIVATE
-          $<$<CONFIG:Debug>:
-              /INCREMENTAL
-          >
-          $<$<CONFIG:Release>:
-              /OPT:REF;
-              /OPT:ICF;
-              /INCREMENTAL:NO;
-              /FORCE:MULTIPLE
-          >
+          $<$<CONFIG:Debug>:/INCREMENTAL>
+          $<$<CONFIG:Release>:/OPT:REF;/OPT:ICF;/INCREMENTAL:NO;/FORCE:MULTIPLE>
           /MANIFEST:NO;
           /DEBUG;
           /SUBSYSTEM:WINDOWS
       )
   elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
       target_link_options(${PROJECT_NAME} PRIVATE
-          $<$<CONFIG:Debug>:
-              /STACK:8777216
-          >
-          $<$<CONFIG:Release>:
-              /OPT:REF;
-              /OPT:ICF;
-              /INCREMENTAL:NO;
-              /FORCE:MULTIPLE
-          >
+          $<$<CONFIG:Debug>:/STACK:8777216>
+          $<$<CONFIG:Release>:/OPT:REF;/OPT:ICF;/INCREMENTAL:NO;/FORCE:MULTIPLE>
           /MANIFEST:NO;
           /DEBUG;
           /SUBSYSTEM:WINDOWS
       )
   endif()
 
-  # Remove /RTC from msvc flags
-  foreach (fentry
-    CMAKE_C_FLAGS
-    CMAKE_CXX_FLAGS
-  )
+  foreach (fentry CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
     string (REGEX REPLACE "/RTC(su|[1su])" "" ${fentry} "${${fentry}}")
-  endforeach(fentry)
+  endforeach()
 endif()
+
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
     if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
